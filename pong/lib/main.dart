@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:io';
+import 'package:audioplayers/audioplayers.dart';
+
+final player = AudioPlayer();
 
 void main() {
   runApp(PongGame());
@@ -19,7 +22,36 @@ class PongGame extends StatelessWidget {
   }
 }
 
-class MenuScreen extends StatelessWidget {
+class MenuScreen extends StatefulWidget {
+  @override
+  _MenuScreenState createState() => _MenuScreenState();
+}
+
+class _MenuScreenState extends State<MenuScreen> {
+
+  @override
+  void initState() {
+    super.initState();
+    _playMusic();
+  }
+
+  void _playMusic() async {
+    try {
+      await player.setSource(AssetSource('music/background.mp3'));
+      await player.setVolume(0.1);
+      await player.setReleaseMode(ReleaseMode.loop); // Ustaw muzykę w pętli
+      await player.resume(); // Rozpocznij odtwarzanie
+    } catch (e) {
+      print("Error playing audio: $e");
+    }
+  }
+
+  @override
+  void dispose() {
+    player.dispose(); // Zwolnij zasoby audio przy zamykaniu ekranu
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -45,8 +77,7 @@ class MenuScreen extends StatelessWidget {
             SizedBox(height: 10),
             ElevatedButton(
               onPressed: () {
-                // Wyjście z aplikacji
-                exit(0);
+                exit(0); // Wyjście z aplikacji
               },
               child: Text('Exit'),
             ),
@@ -122,6 +153,7 @@ class _GameScreenState extends State<GameScreen> {
   Timer? timer;
   bool ruchPilki = true;
   double poziom = 2;
+  final sound = AudioPlayer();
 
   int wynikGracza = 0; // Wynik gracza
   int wynikKomputera = 0; // Wynik komputera
@@ -142,6 +174,7 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   void startGame(double poziom) {
+    sound.setVolume(0.3);
     Future.delayed(Duration(seconds: 1), () {
     timer = Timer.periodic(Duration(milliseconds: 16), (Timer timer) {
       setState(() {
@@ -152,6 +185,7 @@ class _GameScreenState extends State<GameScreen> {
           // Odbicie od lewej i prawej krawędzi
           if (pilka.x - pilka.promien <= 0 || pilka.x + pilka.promien >= screenWidth) {
             pilka.predkosc_x = -pilka.predkosc_x;
+            sound.play(AssetSource('music/wall.mp3'));
           }
 
           // Odbicie od paletki gracza
@@ -159,6 +193,8 @@ class _GameScreenState extends State<GameScreen> {
               pilka.y - pilka.promien <= paletkaGracza.y + paletkaGracza.szerokosc &&
               pilka.x + pilka.promien >= paletkaGracza.x &&
               pilka.x - pilka.promien <= paletkaGracza.x + paletkaGracza.dlugosc) {
+
+                sound.play(AssetSource('music/odbicie.mp3'));
 
             // Kolizja z górą paletki
             if (pilka.y <= paletkaGracza.y) {
@@ -186,6 +222,8 @@ class _GameScreenState extends State<GameScreen> {
               pilka.y + pilka.promien >= paletkaKomputera.y &&
               pilka.x + pilka.promien >= paletkaKomputera.x &&
               pilka.x - pilka.promien <= paletkaKomputera.x + paletkaKomputera.dlugosc) {
+
+                sound.play(AssetSource('music/odbicie.mp3'));
 
             // Kolizja z górą paletki
             if (pilka.y <= paletkaKomputera.y) {
@@ -223,6 +261,7 @@ class _GameScreenState extends State<GameScreen> {
     // Gracz zdobywa punkt
     if (pilka.y - pilka.promien <= 0) {
       wynikGracza++;
+      sound.play(AssetSource('music/win.mp3'));
       pilka.reset(screenWidth / 2, 150); // Reset piłki w kierunku gracza
       ruchPilki = false; // Zatrzymanie ruchu piłki
       Future.delayed(Duration(seconds: 1), () => ruchPilki = true); // Wznowienie ruchu po sekundzie
@@ -231,6 +270,7 @@ class _GameScreenState extends State<GameScreen> {
     // Komputer zdobywa punkt
     if (pilka.y + pilka.promien >= screenHeight) {
       wynikKomputera++;
+      sound.play(AssetSource('music/lose.mp3'));
       pilka.reset(screenWidth / 2, screenHeight - 150); // Reset piłki w kierunku komputera
       ruchPilki = false; // Zatrzymanie ruchu piłki
       Future.delayed(Duration(seconds: 1), () => ruchPilki = true); // Wznowienie ruchu po sekundzie
@@ -290,7 +330,7 @@ class _GameScreenState extends State<GameScreen> {
             left: 0,
             child: TextButton(
               onPressed: () {
-                  Navigator.push(
+                  Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(builder: (context) => MenuScreen()),
                 );
