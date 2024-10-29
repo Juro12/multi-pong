@@ -17,38 +17,60 @@ class PongGame extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: MenuScreen(), // Zmieniamy na MenuScreen
+      home: MenuScreen(0.3, 0.1),
     );
   }
 }
 
 class MenuScreen extends StatefulWidget {
+  final double sound;
+  final double music;
+
+  MenuScreen(this.sound, this.music);
+
   @override
   _MenuScreenState createState() => _MenuScreenState();
 }
 
 class _MenuScreenState extends State<MenuScreen> {
-
+  double musicVolume = 0.0;
+  double soundVolume = 0.0;
+  
   @override
   void initState() {
     super.initState();
+    musicVolume = widget.music;  // Przypisanie wartości z widgeta
+    soundVolume = widget.sound;
     _playMusic();
   }
 
   void _playMusic() async {
     try {
       await player.setSource(AssetSource('music/background.mp3'));
-      await player.setVolume(0.1);
-      await player.setReleaseMode(ReleaseMode.loop); // Ustaw muzykę w pętli
-      await player.resume(); // Rozpocznij odtwarzanie
+      await player.setVolume(musicVolume);
+      await player.setReleaseMode(ReleaseMode.loop);
+      await player.resume();
     } catch (e) {
       print("Error playing audio: $e");
     }
   }
 
+  void _updateMusicVolume(double value) {
+    setState(() {
+      musicVolume = value;
+      player.setVolume(musicVolume);
+    });
+  }
+
+  void _updateSoundVolume(double value) {
+    setState(() {
+      soundVolume = value;
+    });
+  }
+
   @override
   void dispose() {
-    player.dispose(); // Zwolnij zasoby audio przy zamykaniu ekranu
+    player.dispose();
     super.dispose();
   }
 
@@ -69,7 +91,7 @@ class _MenuScreenState extends State<MenuScreen> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => Settingsscreen()),
+                  MaterialPageRoute(builder: (context) => Settingsscreen(soundVolume: soundVolume, musicVolume: musicVolume)),
                 );
               },
               child: Text('Start Game'),
@@ -77,9 +99,28 @@ class _MenuScreenState extends State<MenuScreen> {
             SizedBox(height: 10),
             ElevatedButton(
               onPressed: () {
-                exit(0); // Wyjście z aplikacji
+                exit(0);
               },
               child: Text('Exit'),
+            ),
+            SizedBox(height: 20),
+            Text('Music Volume', style: TextStyle(color: Colors.white)),
+            Slider(
+              value: musicVolume,
+              min: 0.0,
+              max: 1.0,
+              onChanged: _updateMusicVolume,
+              activeColor: Colors.blue,
+              inactiveColor: Colors.grey,
+            ),
+            Text('Sound Volume', style: TextStyle(color: Colors.white)),
+            Slider(
+              value: soundVolume,
+              min: 0.0,
+              max: 1.0,
+              onChanged: _updateSoundVolume,
+              activeColor: Colors.blue,
+              inactiveColor: Colors.grey,
             ),
           ],
         ),
@@ -89,6 +130,11 @@ class _MenuScreenState extends State<MenuScreen> {
 }
 
 class Settingsscreen extends StatelessWidget {
+  final double soundVolume;
+  final double musicVolume;
+
+  Settingsscreen({required this.soundVolume, required this.musicVolume});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -106,7 +152,7 @@ class Settingsscreen extends StatelessWidget {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => GameScreen(1)),
+                  MaterialPageRoute(builder: (context) => GameScreen(1, soundVolume, musicVolume)),
                 );
               },
               child: Text('Easy'),
@@ -116,7 +162,7 @@ class Settingsscreen extends StatelessWidget {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => GameScreen(2)),
+                  MaterialPageRoute(builder: (context) => GameScreen(2, soundVolume, musicVolume)),
                 );
               },
               child: Text('Medium'),
@@ -126,7 +172,7 @@ class Settingsscreen extends StatelessWidget {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => GameScreen(3)),
+                  MaterialPageRoute(builder: (context) => GameScreen(3, soundVolume, musicVolume)),
                 );
               },
               child: Text('Hard'),
@@ -140,7 +186,10 @@ class Settingsscreen extends StatelessWidget {
 
 class GameScreen extends StatefulWidget {
   final double poziom;
-  GameScreen(this.poziom);
+  final double soundVolume;
+  final double musicVolume;
+
+  GameScreen(this.poziom, this.soundVolume, this.musicVolume);
 
   @override
   _GameScreenState createState() => _GameScreenState();
@@ -155,11 +204,11 @@ class _GameScreenState extends State<GameScreen> {
   double poziom = 2;
   final sound = AudioPlayer();
 
-  int wynikGracza = 0; // Wynik gracza
-  int wynikKomputera = 0; // Wynik komputera
+  int wynikGracza = 0;
+  int wynikKomputera = 0;
 
-  static const double screenWidth = 400; // Szerokość w pikselach
-  static const double screenHeight = 600; // Wysokość w pikselach
+  static const double screenWidth = 400;
+  static const double screenHeight = 600;
 
   double scaleX = 1.0;
   double scaleY = 1.0;
@@ -168,13 +217,14 @@ class _GameScreenState extends State<GameScreen> {
   void initState() {
     super.initState();
     pilka = Pilka(screenWidth / 2, screenHeight / 2);
-    paletkaGracza = Paletka(screenWidth / 2, screenHeight - 50, isPlayer: true); // Gracz na dole
-    paletkaKomputera = Paletka(screenWidth / 2, 50, isPlayer: false); // Komputer na górze
+    paletkaGracza = Paletka(screenWidth / 2, screenHeight - 50, isPlayer: true);
+    paletkaKomputera = Paletka(screenWidth / 2, 50, isPlayer: false);
+    print(widget.soundVolume);
     startGame(widget.poziom);
   }
 
   void startGame(double poziom) {
-    sound.setVolume(0.3);
+    sound.setVolume(widget.soundVolume);
     Future.delayed(Duration(seconds: 1), () {
     timer = Timer.periodic(Duration(milliseconds: 16), (Timer timer) {
       setState(() {
@@ -332,7 +382,7 @@ class _GameScreenState extends State<GameScreen> {
               onPressed: () {
                   Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) => MenuScreen()),
+                  MaterialPageRoute(builder: (context) => MenuScreen(widget.soundVolume, widget.musicVolume)),
                 );
               },
               style: TextButton.styleFrom(
