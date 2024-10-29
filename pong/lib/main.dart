@@ -37,7 +37,7 @@ class MenuScreen extends StatelessWidget {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => GameScreen()),
+                  MaterialPageRoute(builder: (context) => Settingsscreen()),
                 );
               },
               child: Text('Start Game'),
@@ -57,7 +57,60 @@ class MenuScreen extends StatelessWidget {
   }
 }
 
+class Settingsscreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Choose level',
+              style: TextStyle(color: Colors.white, fontSize: 36),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => GameScreen(1)),
+                );
+              },
+              child: Text('Easy'),
+            ),
+            SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => GameScreen(2)),
+                );
+              },
+              child: Text('Medium'),
+            ),
+            SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => GameScreen(3)),
+                );
+              },
+              child: Text('Hard'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class GameScreen extends StatefulWidget {
+  final double poziom;
+  GameScreen(this.poziom);
+
   @override
   _GameScreenState createState() => _GameScreenState();
 }
@@ -68,6 +121,7 @@ class _GameScreenState extends State<GameScreen> {
   late Paletka paletkaKomputera;
   Timer? timer;
   bool ruchPilki = true;
+  double poziom = 2;
 
   int wynikGracza = 0; // Wynik gracza
   int wynikKomputera = 0; // Wynik komputera
@@ -84,10 +138,10 @@ class _GameScreenState extends State<GameScreen> {
     pilka = Pilka(screenWidth / 2, screenHeight / 2);
     paletkaGracza = Paletka(screenWidth / 2, screenHeight - 50, isPlayer: true); // Gracz na dole
     paletkaKomputera = Paletka(screenWidth / 2, 50, isPlayer: false); // Komputer na górze
-    startGame();
+    startGame(widget.poziom);
   }
 
-  void startGame() {
+  void startGame(double poziom) {
     Future.delayed(Duration(seconds: 1), () {
     timer = Timer.periodic(Duration(milliseconds: 16), (Timer timer) {
       setState(() {
@@ -159,7 +213,7 @@ class _GameScreenState extends State<GameScreen> {
         }
 
         // Ruch paletki komputera
-        paletkaKomputera.aiMove(pilka, screenHeight, screenWidth);
+        paletkaKomputera.aiMove(pilka, screenHeight, screenWidth, poziom);
       });
     });
   });
@@ -236,8 +290,10 @@ class _GameScreenState extends State<GameScreen> {
             left: 0,
             child: TextButton(
               onPressed: () {
-                // Nawigacja do menu
-                Navigator.pop(context);
+                  Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => MenuScreen()),
+                );
               },
               style: TextButton.styleFrom(
                 backgroundColor: Colors.transparent, // Kolor tła przycisku
@@ -321,7 +377,7 @@ class Paletka {
     }
   }
 
-void aiMove(Pilka pilka, double height, double width) {
+void aiMove(Pilka pilka, double height, double width, double poziom) {
   if (pilka.y > height / 2) {
     x += predkosc; // Stały ruch w jednym kierunku, gdy piłka jest na połowie gracza
 
@@ -338,15 +394,15 @@ void aiMove(Pilka pilka, double height, double width) {
 
     if (odlegloscDoPilki.abs() > 50) { // Jeśli piłka jest dalej niż 50 pikseli
       if (odlegloscDoPilki < 0) {
-        x -= predkosc.abs(); // Szybszy ruch w lewo
+        x -= poziom; // Szybszy ruch w lewo
       } else {
-        x += predkosc.abs(); // Szybszy ruch w prawo
+        x += poziom; // Szybszy ruch w prawo
       }
     } else { // Wolniejszy ruch, gdy piłka jest blisko
       if (odlegloscDoPilki < 0) {
-        x -= predkosc.abs(); // Wolniejszy ruch w lewo
+        x -= poziom; // Wolniejszy ruch w lewo
       } else {
-        x += predkosc.abs(); // Wolniejszy ruch w prawo
+        x += poziom; // Wolniejszy ruch w prawo
       }
     }
 
